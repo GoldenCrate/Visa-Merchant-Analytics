@@ -97,7 +97,8 @@ with right:
     threshold = alt.Chart(pd.DataFrame({"x": [0.35]})).mark_rule(
         strokeDash=[5, 3], color=COLORS["red"], strokeWidth=2
     ).encode(x="x:Q")
-    threshold_label = alt.Chart(pd.DataFrame({"x": [0.35], "y": [50], "label": ["Risk threshold"]})).mark_text(
+    label_y = int(np.histogram(prob_df["Churn_Probability"], bins=30)[0].max() * 0.6)
+    threshold_label = alt.Chart(pd.DataFrame({"x": [0.35], "y": [label_y], "label": ["Risk threshold"]})).mark_text(
         align='left', dx=6, fontSize=11, color=COLORS["red"]
     ).encode(x="x:Q", y="y:Q", text="label:N")
     prob_chart = (hist + threshold + threshold_label).configure_view(strokeWidth=0)
