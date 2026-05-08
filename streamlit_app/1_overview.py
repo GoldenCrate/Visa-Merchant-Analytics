@@ -19,8 +19,8 @@ st.caption("A data scientist's toolkit for merchant segmentation, churn predicti
 df = load_merchants()
 
 # ── KPI cards ─────────────────────────────────────────────────────────────────
-st.markdown("### Manual Integration Drives 2× the Churn of Fully Integrated Merchants")
-st.caption("Integration type is the single most actionable lever for reducing portfolio churn.")
+st.markdown("### 2,000 Merchants Across 5 Regions — 21% Portfolio Churn Rate")
+st.caption("Key portfolio metrics. Scroll down to see what's driving churn and where to intervene.")
 k1, k2, k3, k4, k5 = st.columns(5)
 k1.metric("Total Merchants", f"{len(df):,}")
 k2.metric("Avg Monthly Volume", f"${df['avg_monthly_volume_k'].mean():,.0f}K")
@@ -61,8 +61,9 @@ with left:
         )
         .properties(height=280)
     )
-    labels = bar.mark_text(align='left', dx=4, fontSize=11, color=COLORS["navy"]).encode(
-        text=alt.Text("Median_Volume_K:Q", format=",.0f")
+    labels = bar.mark_text(align='left', dx=4, fontSize=11).encode(
+        text=alt.Text("Median_Volume_K:Q", format=",.0f"),
+        color=alt.value(COLORS["navy"])
     )
     bar = (bar + labels).configure_view(strokeWidth=0)
     st.altair_chart(bar, use_container_width=True)
@@ -94,8 +95,9 @@ with right:
         )
         .properties(height=280)
     )
-    churn_labels = churn_bar.mark_text(align='left', dx=4, fontSize=11, color=COLORS["navy"]).encode(
-        text=alt.Text("Churn_Pct:Q", format=".1f")
+    churn_labels = churn_bar.mark_text(align='left', dx=4, fontSize=11).encode(
+        text=alt.Text("Churn_Pct:Q", format=".1f"),
+        color=alt.value(COLORS["navy"])
     )
     churn_bar = (churn_bar + churn_labels).configure_view(strokeWidth=0)
     st.altair_chart(churn_bar, use_container_width=True)
@@ -152,8 +154,9 @@ with right2:
         )
         .properties(height=180)
     )
-    integ_labels = integ_bar.mark_text(align='left', dx=4, fontSize=11, color=COLORS["navy"]).encode(
-        text=alt.Text("Churn_Pct:Q", format=".1f")
+    integ_labels = integ_bar.mark_text(align='left', dx=4, fontSize=11).encode(
+        text=alt.Text("Churn_Pct:Q", format=".1f"),
+        color=alt.value(COLORS["navy"])
     )
     integ_bar = (integ_bar + integ_labels).configure_view(strokeWidth=0)
     st.altair_chart(integ_bar, use_container_width=True)
