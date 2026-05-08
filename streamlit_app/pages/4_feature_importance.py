@@ -6,9 +6,18 @@ from utils.data_loader import load_merchants
 from utils.churn_model import train_churn_model, predict_merchant_churn, FEATURES, FRIENDLY_NAMES
 from utils.shap_explainer import compute_global_importance, compute_merchant_shap
 
+COLORS = {
+    "navy":  "#1e3a5f",
+    "blue":  "#2563eb",
+    "grey":  "#9ca3af",
+    "red":   "#dc2626",
+    "amber": "#d97706",
+    "green": "#16a34a",
+}
+
 st.set_page_config(page_title="Feature Importance", layout="wide")
-st.title("SHAP Feature Importance")
-st.caption("SHAP (SHapley Additive exPlanations) explains exactly which factors drive churn risk — globally across all merchants and for any individual merchant.")
+st.title("Feature Importance")
+st.caption("Explains which factors drive churn risk — globally across all merchants and for any individual merchant.")
 
 df = load_merchants()
 
@@ -46,26 +55,39 @@ model, X_train, X_test, y_test, feature_names, metrics = get_model(df)
 global_imp = get_global_importance(model, X_train)
 
 # ── Global importance chart ────────────────────────────────────────────────────
-st.subheader("Global Feature Importance (Mean |SHAP|)")
-st.markdown("Average absolute SHAP value across all merchants — the higher the bar, the more that feature drives churn predictions overall.")
+st.markdown("### Dispute Rate and Volume Decline Are the Strongest Predictors of Churn")
+st.caption("These two features are the earliest warning signals — monitor them weekly for at-risk merchants.")
+
+# Top 2 features get blue accent; rest are grey
+top2 = set(global_imp.nlargest(2, "Importance")["Feature"].tolist())
 
 global_bar = (
     alt.Chart(global_imp)
-    .mark_bar(color="#2471a3")
+    .mark_bar()
     .encode(
-        y=alt.Y("Feature:N", sort="-x", title=None),
-        x=alt.X("Importance:Q", title="Mean |SHAP Value|"),
-        tooltip=["Feature:N", alt.Tooltip("Importance:Q", format=".4f", title="Mean |SHAP|")],
+        y=alt.Y("Feature:N", sort="-x", title=None, axis=alt.Axis(grid=False)),
+        x=alt.X("Importance:Q", title="Feature Importance Score", axis=alt.Axis(grid=False)),
+        color=alt.condition(
+            alt.FieldOneOfPredicate(field="Feature", oneOf=list(top2)),
+            alt.value(COLORS["blue"]),
+            alt.value(COLORS["grey"])
+        ),
+        tooltip=["Feature:N", alt.Tooltip("Importance:Q", format=".4f", title="Importance")],
     )
     .properties(height=340)
 )
+imp_labels = global_bar.mark_text(align='left', dx=4, fontSize=11).encode(
+    text=alt.Text("Importance:Q", format=".3f"),
+    color=alt.value(COLORS["navy"])
+)
+global_bar = (global_bar + imp_labels).configure_view(strokeWidth=0)
 st.altair_chart(global_bar, use_container_width=True)
-st.caption("Feature importance computed from mean impurity decrease (Gini) across all 200 trees — equivalent to mean |SHAP| for tree ensembles.")
 
 st.divider()
 
 # ── Per-merchant SHAP waterfall ────────────────────────────────────────────────
-st.subheader("Individual Merchant Explanation")
+st.markdown("### Why Did This Merchant Score High Risk? Feature-by-Feature Breakdown")
+st.caption("Red = features pushing risk up. Green = features pulling risk down. Length = magnitude of impact.")
 st.markdown("Select a merchant to see exactly why the model assigned their churn score.")
 
 sample = df.sample(min(50, len(df)), random_state=1).sort_values("churn_label", ascending=False)
@@ -85,18 +107,19 @@ waterfall = (
     alt.Chart(shap_df)
     .mark_bar()
     .encode(
-        y=alt.Y("Feature:N", sort=list(shap_df["Feature"]), title=None),
-        x=alt.X("SHAP_Value:Q", title="SHAP Value (positive = increases churn risk)"),
+        y=alt.Y("Feature:N", sort=list(shap_df["Feature"]), title=None, axis=alt.Axis(grid=False)),
+        x=alt.X("SHAP_Value:Q", title="SHAP Value (positive = increases churn risk)", axis=alt.Axis(grid=False)),
         color=alt.Color("Direction:N", scale=alt.Scale(
             domain=["Increases Risk", "Reduces Risk"],
-            range=["#c0392b", "#1a7a4a"]
+            range=[COLORS["red"], COLORS["green"]]
         )),
         tooltip=["Feature:N", alt.Tooltip("SHAP_Value:Q", format=".4f", title="SHAP Value"), "Direction:N"],
     )
     .properties(height=340)
 )
-zero_line = alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(color="#888").encode(x="x:Q")
-st.altair_chart(waterfall + zero_line, use_container_width=True)
+zero_line = alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(color=COLORS["grey"]).encode(x="x:Q")
+waterfall_chart = (waterfall + zero_line).configure_view(strokeWidth=0)
+st.altair_chart(waterfall_chart, use_container_width=True)
 st.caption("Red bars = features that increase this merchant's churn probability. Green = features that reduce it.")
 
 st.divider()
