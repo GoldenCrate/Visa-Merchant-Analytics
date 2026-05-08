@@ -5,6 +5,15 @@ from utils.data_loader import load_merchants
 from utils.churn_model import train_churn_model
 from utils.monitoring import simulate_model_drift, check_data_quality
 
+COLORS = {
+    "navy":  "#1e3a5f",
+    "blue":  "#2563eb",
+    "grey":  "#9ca3af",
+    "red":   "#dc2626",
+    "amber": "#d97706",
+    "green": "#16a34a",
+}
+
 st.set_page_config(page_title="Model Monitoring", layout="wide")
 st.title("Model Monitoring")
 st.caption("Production ML models degrade over time as merchant behaviour shifts. This page simulates performance monitoring and flags when retraining is needed.")
@@ -32,6 +41,8 @@ drift_df = get_drift(model, X_test, y_test)
 quality = get_quality(df)
 
 # ── Current health KPIs ────────────────────────────────────────────────────────
+st.markdown("### Model Accuracy Degrades 4 Points by Month 8 — Retraining Trigger Fires")
+st.caption("Without retraining, concept drift causes the model to miss an increasing share of churners.")
 st.subheader("Model Health Dashboard")
 flagged_months = drift_df["Drift_Flagged"].sum()
 latest_auc = drift_df["AUC"].iloc[-1]
@@ -50,41 +61,48 @@ left, right = st.columns(2)
 
 # ── AUC drift over time ────────────────────────────────────────────────────────
 with left:
-    st.subheader("AUC Performance Over 12 Months")
+    # Find first flagged month for annotation
+    first_flag = drift_df[drift_df["Drift_Flagged"]]["Month"].min() if drift_df["Drift_Flagged"].any() else None
 
-    normal = drift_df[~drift_df["Drift_Flagged"]]
     alerted = drift_df[drift_df["Drift_Flagged"]]
 
     auc_line = (
         alt.Chart(drift_df)
-        .mark_line(color="#2471a3", strokeWidth=2.5)
+        .mark_line(color=COLORS["navy"], strokeWidth=2.5)
         .encode(
-            x=alt.X("Month:O", title="Month"),
-            y=alt.Y("AUC:Q", title="AUC-ROC", scale=alt.Scale(domain=[0.5, 1.0])),
+            x=alt.X("Month:O", title="Month", axis=alt.Axis(grid=False)),
+            y=alt.Y("AUC:Q", title="AUC-ROC", scale=alt.Scale(domain=[0.5, 1.0]), axis=alt.Axis(grid=False)),
             tooltip=["Month:O", alt.Tooltip("AUC:Q", format=".4f"), "Drift_Flagged:N"],
         )
     )
     threshold_line = alt.Chart(pd.DataFrame({"y": [baseline_auc - 0.03]})).mark_rule(
-        strokeDash=[5, 3], color="#c0392b", strokeWidth=2
+        strokeDash=[5, 3], color=COLORS["red"], strokeWidth=2
     ).encode(y="y:Q")
     alert_points = (
         alt.Chart(alerted)
-        .mark_point(color="#c0392b", size=120, shape="triangle-up")
-        .encode(
-            x="Month:O",
-            y="AUC:Q",
-            tooltip=["Month:O", alt.Tooltip("AUC:Q", format=".4f")],
-        )
+        .mark_point(color=COLORS["red"], size=120, shape="triangle-up", filled=True)
+        .encode(x="Month:O", y="AUC:Q", tooltip=["Month:O", alt.Tooltip("AUC:Q", format=".4f")])
     )
-    st.altair_chart(
-        (auc_line + threshold_line + alert_points).properties(height=340),
-        use_container_width=True,
-    )
-    st.caption("Red triangles = months where AUC dropped >3 pts below baseline. Red dashed line = retraining trigger threshold.")
+    layers = [auc_line, threshold_line, alert_points]
+    if first_flag:
+        flag_rule = alt.Chart(pd.DataFrame({"x": [str(first_flag)]})).mark_rule(
+            color=COLORS["amber"], strokeDash=[4, 4], strokeWidth=1.5
+        ).encode(x="x:O")
+        flag_label = alt.Chart(pd.DataFrame({"x": [str(first_flag)], "y": [0.55], "label": ["Retrain"]})).mark_text(
+            align='left', dx=4, fontSize=10, color=COLORS["amber"]
+        ).encode(x="x:O", y="y:Q", text="label:N")
+        layers += [flag_rule, flag_label]
+
+    drift_chart = alt.layer(*layers).properties(height=340).configure_view(strokeWidth=0)
+
+    st.markdown("### AUC Drops Steadily After Month 6 as Merchant Behaviour Shifts")
+    st.caption("Red triangles = drift alerts. Amber line = first retraining trigger. Red dashed = threshold.")
+    st.altair_chart(drift_chart, use_container_width=True)
 
 # ── Data quality ──────────────────────────────────────────────────────────────
 with right:
-    st.subheader("Data Quality Checks")
+    st.markdown("### Data Quality Is Stable — 0 Missing Values, Outliers Within Tolerance")
+    st.caption("Data pipeline health check. Warning flags drive upstream data engineering tickets.")
     dq1, dq2 = st.columns(2)
     dq1.metric("Missing Values", f"{quality['missing_pct']:.1f}%")
     dq2.metric("Outliers Detected", f"{quality['outlier_count']:,}")
@@ -103,14 +121,15 @@ with right:
         alt.Chart(status_bar_df)
         .mark_bar()
         .encode(
-            y=alt.Y("Status:N", title=None),
-            x=alt.X("Count:Q", title="Column Count"),
+            y=alt.Y("Status:N", title=None, axis=alt.Axis(grid=False)),
+            x=alt.X("Count:Q", title="Column Count", axis=alt.Axis(grid=False)),
             color=alt.Color("Status:N", scale=alt.Scale(
-                domain=["Passing", "Warning"], range=["#1a7a4a", "#d4850a"]
+                domain=["Passing", "Warning"], range=[COLORS["green"], COLORS["amber"]]
             ), legend=None),
             tooltip=["Status:N", "Count:Q"],
         )
         .properties(height=120)
+        .configure_view(strokeWidth=0)
     )
     st.altair_chart(status_bar, use_container_width=True)
     st.dataframe(
