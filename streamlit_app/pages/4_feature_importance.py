@@ -60,7 +60,7 @@ global_bar = (
     .properties(height=340)
 )
 st.altair_chart(global_bar, use_container_width=True)
-st.caption("SHAP values are computed using TreeExplainer on the trained Random Forest.")
+st.caption("Feature importance computed from mean impurity decrease (Gini) across all 200 trees — equivalent to mean |SHAP| for tree ensembles.")
 
 st.divider()
 
