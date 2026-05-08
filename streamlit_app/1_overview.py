@@ -141,15 +141,10 @@ with right2:
         .encode(
             y=alt.Y("Integration:N", sort="-x", title=None, axis=alt.Axis(grid=False)),
             x=alt.X("Churn_Pct:Q", title="Churn Rate (%)", axis=alt.Axis(grid=False)),
-            color=alt.condition(
-                alt.datum.Integration == "Manual",
-                alt.value(COLORS["red"]),
-                alt.condition(
-                    alt.datum.Integration == "Semi-integrated",
-                    alt.value(COLORS["amber"]),
-                    alt.value(COLORS["green"])
-                )
-            ),
+            color=alt.Color("Integration:N", scale=alt.Scale(
+                domain=["Manual", "Semi-integrated", "Integrated"],
+                range=[COLORS["red"], COLORS["amber"], COLORS["green"]]
+            ), legend=None),
             tooltip=["Integration:N", alt.Tooltip("Churn_Pct:Q", format=".1f", title="Churn (%)"), "Count:Q"],
         )
         .properties(height=180)
