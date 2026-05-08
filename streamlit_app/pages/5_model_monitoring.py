@@ -85,12 +85,12 @@ with left:
     )
     layers = [auc_line, threshold_line, alert_points]
     if first_flag:
-        flag_rule = alt.Chart(pd.DataFrame({"x": [str(first_flag)]})).mark_rule(
+        flag_rule = alt.Chart(pd.DataFrame({"Month": [first_flag]})).mark_rule(
             color=COLORS["amber"], strokeDash=[4, 4], strokeWidth=1.5
-        ).encode(x="x:O")
-        flag_label = alt.Chart(pd.DataFrame({"x": [str(first_flag)], "y": [0.55], "label": ["Retrain"]})).mark_text(
+        ).encode(x="Month:O")
+        flag_label = alt.Chart(pd.DataFrame({"Month": [first_flag], "y": [0.55], "label": ["Retrain"]})).mark_text(
             align='left', dx=4, fontSize=10, color=COLORS["amber"]
-        ).encode(x="x:O", y="y:Q", text="label:N")
+        ).encode(x="Month:O", y="y:Q", text="label:N")
         layers += [flag_rule, flag_label]
 
     drift_chart = alt.layer(*layers).properties(height=340).configure_view(strokeWidth=0)
