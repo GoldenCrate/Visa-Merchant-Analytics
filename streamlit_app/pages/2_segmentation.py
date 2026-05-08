@@ -84,8 +84,8 @@ with left:
             ],
         )
         .properties(height=380)
-        .configure_view(strokeWidth=0)
         .interactive()
+        .configure_view(strokeWidth=0)
     )
     st.altair_chart(scatter, use_container_width=True)
 
