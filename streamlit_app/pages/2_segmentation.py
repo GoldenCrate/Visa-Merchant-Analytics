@@ -18,14 +18,25 @@ def get_segmented(_df):
 
 segmented = get_segmented(df)
 
+COLORS = {
+    "navy":  "#1e3a5f",
+    "blue":  "#2563eb",
+    "grey":  "#9ca3af",
+    "red":   "#dc2626",
+    "amber": "#d97706",
+    "green": "#16a34a",
+}
+
 SEGMENT_COLORS = {
-    "Champions": "#1a7a4a",
-    "Growth Stars": "#2471a3",
-    "Stable Partners": "#d4850a",
-    "At-Risk": "#c0392b",
+    "Champions":       COLORS["navy"],
+    "Growth Stars":    COLORS["grey"],
+    "Stable Partners": COLORS["grey"],
+    "At-Risk":         COLORS["red"],
 }
 
 # ── Segment summary KPIs ───────────────────────────────────────────────────────
+st.markdown("### Champions Are 11% of Merchants but Drive the Majority of Portfolio Volume")
+st.caption("Protecting this segment is the highest-ROI retention investment.")
 st.subheader("Segment Summary")
 seg_summary = (
     segmented.groupby("Segment")
@@ -54,16 +65,17 @@ left, right = st.columns(2)
 
 # ── Scatter: volume vs trend colored by segment ────────────────────────────────
 with left:
-    st.subheader("Volume vs Growth Trend by Segment")
+    st.markdown("### Champions Cluster in High-Volume, Positive-Growth Territory — At-Risk Merchants Are Scattered")
+    st.caption("Navy = Champions (protect). Red = At-Risk (intervene). Grey = monitor.")
     scatter = (
         alt.Chart(segmented.sample(min(600, len(segmented)), random_state=42))
         .mark_circle(opacity=0.65, size=60)
         .encode(
-            x=alt.X("volume_trend_pct:Q", title="Volume Trend YoY (%)", scale=alt.Scale(domain=[-50, 65])),
-            y=alt.Y("avg_monthly_volume_k:Q", title="Avg Monthly Volume ($K)", scale=alt.Scale(type="log")),
+            x=alt.X("volume_trend_pct:Q", title="Volume Trend YoY (%)", scale=alt.Scale(domain=[-50, 65]), axis=alt.Axis(grid=False)),
+            y=alt.Y("avg_monthly_volume_k:Q", title="Avg Monthly Volume ($K)", scale=alt.Scale(type="log"), axis=alt.Axis(grid=False)),
             color=alt.Color("Segment:N", scale=alt.Scale(
                 domain=list(SEGMENT_COLORS.keys()), range=list(SEGMENT_COLORS.values())
-            )),
+            ), legend=None),
             tooltip=[
                 "merchant_name:N", "Segment:N", "category:N",
                 alt.Tooltip("avg_monthly_volume_k:Q", format="$,.0f", title="Volume ($K)"),
@@ -72,43 +84,48 @@ with left:
             ],
         )
         .properties(height=380)
+        .configure_view(strokeWidth=0)
         .interactive()
     )
     st.altair_chart(scatter, use_container_width=True)
 
 # ── Segment profile bars ───────────────────────────────────────────────────────
 with right:
-    st.subheader("Average Dispute Rate by Segment")
+    st.markdown("### At-Risk Merchants Have 3× the Dispute Rate of Champions")
+    st.caption("Dispute rate is the clearest early warning signal — monitor it weekly.")
     dispute_bar = (
         alt.Chart(seg_summary)
         .mark_bar()
         .encode(
-            y=alt.Y("Segment:N", sort="-x", title=None),
-            x=alt.X("Avg_Dispute:Q", title="Avg Dispute Rate (%)"),
+            y=alt.Y("Segment:N", sort="-x", title=None, axis=alt.Axis(grid=False)),
+            x=alt.X("Avg_Dispute:Q", title="Avg Dispute Rate (%)", axis=alt.Axis(grid=False)),
             color=alt.Color("Segment:N", scale=alt.Scale(
                 domain=list(SEGMENT_COLORS.keys()), range=list(SEGMENT_COLORS.values())
             ), legend=None),
             tooltip=["Segment:N", alt.Tooltip("Avg_Dispute:Q", format=".2f", title="Avg Dispute (%)")],
         )
         .properties(height=180)
+        .configure_view(strokeWidth=0)
     )
     st.altair_chart(dispute_bar, use_container_width=True)
 
-    st.subheader("Churn Rate by Segment")
+    st.markdown("### At-Risk Merchants Churn at 4× the Rate of Champions")
+    st.caption("Segment-level churn rates define intervention priority and budget allocation.")
     churn_pct_df = seg_summary.copy()
     churn_pct_df["Churn_Pct"] = (churn_pct_df["Churn_Rate"] * 100).round(1)
     churn_bar = (
         alt.Chart(churn_pct_df)
         .mark_bar()
         .encode(
-            y=alt.Y("Segment:N", sort="-x", title=None),
-            x=alt.X("Churn_Pct:Q", title="Churn Rate (%)"),
+            y=alt.Y("Segment:N", sort="-x", title=None, axis=alt.Axis(grid=False)),
+            x=alt.X("Churn_Pct:Q", title="Churn Rate (%)", axis=alt.Axis(grid=False)),
             color=alt.Color("Segment:N", scale=alt.Scale(
                 domain=list(SEGMENT_COLORS.keys()), range=list(SEGMENT_COLORS.values())
             ), legend=None),
             tooltip=["Segment:N", alt.Tooltip("Churn_Pct:Q", format=".1f", title="Churn (%)")],
         )
         .properties(height=180)
+        .configure_view(strokeWidth=0)
     )
     st.altair_chart(churn_bar, use_container_width=True)
 
