@@ -1,10 +1,15 @@
 # Visa Merchant Analytics
 
-This project models the analytical and ML work performed by a Data Scientist on Visa's merchant risk team. It synthesises 2,000 synthetic merchant profiles spanning five regions and six categories to deliver portfolio health monitoring, behavioural segmentation, churn prediction, and model explainability. **The centrepiece is a full MLOps story in five pages: a Random Forest churn classifier trained on 1,500 merchants, a SHAP-powered feature importance explorer that explains every score in plain English, and a model monitoring dashboard that simulates concept drift over 12 months and fires retraining alerts before accuracy degrades below acceptable thresholds.**
+### [Live Dashboard →](https://visa-merchant-analytics-r9ku5cbcn542urfbqdxbuy.streamlit.app/)
 
-## Live Dashboard
+![Overview](docs/overview.png)
+![Churn Risk](docs/churn-risk.png)
 
-**URL:** https://visa-merchant-analytics-r9ku5cbcn542urfbqdxbuy.streamlit.app/
+**A full ML lifecycle in five pages — churn prediction, SHAP explainability, K-Means segmentation, and a model monitoring dashboard that fires retraining alerts before accuracy degrades.**
+
+---
+
+This project models the analytical and ML work performed by a Data Scientist on Visa's merchant risk team. It synthesises 2,000 synthetic merchant profiles spanning five regions and six categories to deliver portfolio health monitoring, behavioural segmentation, churn prediction, and model explainability. The centrepiece is a Random Forest churn classifier trained on 1,500 merchants, a SHAP-powered feature importance explorer that explains every score in plain English, and a model monitoring dashboard that simulates concept drift over 12 months and fires retraining alerts before accuracy degrades below acceptable thresholds.
 
 ## Job Posting
 
@@ -38,14 +43,6 @@ This project demonstrates the role's core deliverables: churn modelling, merchan
 **Page 4 — Feature Importance:** Explains *why* the model scores each merchant. Global SHAP importance ranks all ten features by predictive weight, with dispute rate and volume trend identified as the two dominant signals. Per-merchant SHAP waterfall shows feature-by-feature contribution to any individual merchant's churn score — turning a black-box model into a client-ready conversation.
 
 **Page 5 — Model Monitoring:** Production models degrade as merchant behaviour shifts. This page simulates 12 months of concept drift with Gaussian noise injection, plots AUC over time against a retraining threshold, and fires drift alerts when performance drops more than 3 percentage points from baseline. Includes a data quality checker and a documented retraining protocol (trigger → frequency → ownership).
-
-## Dashboard Preview
-
-### Overview
-![Overview](docs/overview.png)
-
-### Churn Risk Classifier
-![Churn Risk](docs/churn-risk.png)
 
 ## JD Alignment
 
